@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>agar.io</title>
+	<style type="text/css">
+		#canvas {
+			position: absolute;
+			top: 0px;
+			left: 0px;
+			border: 1px solid #000;
+			box-sizing: border-box;
+			display: block;
+			width: 640px;
+			height: 480px;
+			overflow: hidden;
+			background-color: #EEE;
+		}
+	</style>
+</head>
+<body>
+	<div id="canvas"></div>
+	<script type="text/javascript">
+		const K_A = 65, K_W = 87, K_D = 68, K_S = 83;
+		var Move = {left: false, right: false, up: false, down: false};
+
+		document.addEventListener('keydown', function(event) {
+			if (event.keyCode == K_A) {
+				Move["left"] = true;
+			} else if (event.keyCode == K_D) {
+				Move["right"] = true;
+			} else if (event.keyCode == K_W) {
+				Move["up"] = true;
+			} else if (event.keyCode == K_S) {
+				Move["down"] = true;
+			}
+		});
+		document.addEventListener('keyup', function(event) {
+			if (event.keyCode == K_A) {
+				Move["left"] = false;
+			} else if (event.keyCode == K_D) {
+				Move["right"] = false;
+			} else if (event.keyCode == K_W) {
+				Move["up"] = false;
+			} else if (event.keyCode == K_S) {
+				Move["down"] = false;
+			}
+		});
+
+		var server = new WebSocket("ws://192.168.1.38:1540");
+
+		server.onopen = function (e) {
+			setInterval(function () {
+				server.send(JSON.stringify({need: "move", data: {move: Move}}));
+			}, 1000/60)
+		}
+
+		server.onmessage = function (e) {
+			var msg = JSON.parse(e.data.toString());
+			if (msg.need == "draw") {
+				document.getElementById("canvas").innerHTML = "";
+				for (var obj in msg.data.objects) {
+					var a = document.createElement("div");
+					a.style.width = msg.data.objects[obj]["s"] + "px";
+					a.style.height = msg.data.objects[obj]["s"] + "px";
+					a.style.display = "block";
+					a.style.position = "absolute";
+					a.style.backgroundColor = "#0F0";
+					a.style.borderRadius = "50px";
+					a.style.left = (+msg.data.objects[obj]["x"] - +msg.data.objects[obj]["s"] / 2) + "px";
+					a.style.top = (+msg.data.objects[obj]["y"] - +msg.data.objects[obj]["s"] / 2) + "px";
+					document.getElementById("canvas").appendChild(a);
+				}
+				for (var user in msg.data.users) {
+					var a = document.createElement("div");
+					a.style.width = msg.data.users[user]["s"] + "px";
+					a.style.height = msg.data.users[user]["s"] + "px";
+					a.style.display = "block";
+					a.style.position = "absolute";
+					a.style.backgroundColor = "#F00";
+					a.style.borderRadius = "50px";
+					a.style.left = (+msg.data.users[user]["x"] - +msg.data.users[user]["s"] / 2) + "px";
+					a.style.top = (+msg.data.users[user]["y"] - +msg.data.users[user]["s"] / 2) + "px";
+					document.getElementById("canvas").appendChild(a);
+				}
+			}
+		}
+
+	</script>
+</body>
+</html>
